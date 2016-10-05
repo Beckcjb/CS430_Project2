@@ -1,3 +1,5 @@
+// Charles Beck
+// PPM Writer
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -5,52 +7,45 @@ typedef struct PixelColor {
     unsigned char r, g, b;
 } PixelColor;
 
-// Buffer
+
 typedef struct Pixmap
 {
     int width, height, magicNumber, color;
     PixelColor *image;
 }Pixmap;
 
-int ppmWriter(Pixmap *buffer, char *outputFileName, int size, int desiredFormat)
+int ppmWriter(Pixmap *buffer, char *outputFileName, int size, int type)
 {
-    FILE *destination;
+    FILE *printFile;
     int i, j, numPix;
-    char comment[] = {"#Charles Beck"};
-    char color[64];
-    //printf("%s", comment);
+    char comment[] = {"#Creator: Charles Beck"};
 
-    destination = fopen(outputFileName, "w");
-    if (!destination)
+
+    printFile = fopen(outputFileName, "w");
+    if (!printFile)
     {
-        fprintf(stderr,"\nERROR: Can't open the file for writing");
-        fclose(destination);
-        return -1;
+        fprintf(stderr,"Erroe: Can't open the file for writing");
+        fclose(printFile);
+        exit(1);
     }
     else
     {
-        fprintf(destination, "P%d\n%s\n%d %d\n%d\n", desiredFormat, comment, buffer->width, buffer->height, buffer->color);
-        // Print out to the outfile in P6 format
-        if(desiredFormat == 6)
+        fprintf(printFile, "P%d\n%s\n%d %d\n%d\n", type, comment, buffer->width, buffer->height, 255);
+     
+											// Print out to the outfile in P3 format
+        if(type == 3)
         {
-            numPix = fwrite(buffer->image, sizeof(PixelColor), size, destination);
-        }
-        // Print out to the outfile in P3 format
-        else if(desiredFormat == 3)
-       for(i = 0; i < (buffer->height); i++)
-        {
-			for(j = 0; j < (buffer->width); j++)
+            for(i = 0; i < (buffer->height); i++)
             {
-				sprintf(color, "%d", buffer->image[(buffer->width) * i + j].r);
-				fprintf(destination, "%s\n", color);
-				sprintf(color, "%d", buffer->image[(buffer->width) * i + j].g);
-				fprintf(destination, "%s\n", color);
-				sprintf(color, "%d", buffer->image[(buffer->width) * i + j].b);
-				fprintf(destination, "%s\n", color);
-			}
-		}
+                for(j = 0; j < (buffer->width); j++)
+                {
+                    fprintf(printFile, "%d ", buffer->image[i * buffer->width *3+3*j].r);
+                    fprintf(printFile, "%d ", buffer->image[i * buffer->width *3+3*j+1].g);
+                    fprintf(printFile, "%d\n", buffer->image[i * buffer->width *3+ 3*j+2].b);
+                }
+            }
+        }
     }
-
-    fclose(destination);
+    fclose(printFile);
     return 0;
 }

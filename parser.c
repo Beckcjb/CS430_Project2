@@ -1,24 +1,25 @@
+// Charles Beck
+// Parser: Json files
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "objectStructs.h"
+#include "objectsStructs.h"
 
 // Line number to report errors
 int lineNumber = 1;
 
 
-// Checks to see if the current character in the file is a new line
-// If it is then we want to increase the overall line count
+// Checks to see if the current character is new line
 int next_c(FILE* json) {
     int c = fgetc(json);
-    // If new line add one to the line number counter
+    
     if (c == '\n')
     {
         lineNumber += 1;
     }
 
-    // If end of file exit program and close the file
+							// If end of file exit program and close the file
     if (c == EOF)
     {
         fprintf(stderr, "Error: Unexpected end of file on line number %d.\n", lineNumber);
@@ -89,7 +90,7 @@ char* next_str(FILE* json)
           fclose(json);
           exit(-1);
         }
-        // Add the character to the buffer and move on to the next character in the string
+        // Add the character to the buffer
         buffer[i] = c;
         i += 1;
         c = next_c(json);
@@ -99,7 +100,7 @@ char* next_str(FILE* json)
     return strdup(buffer);
 }
 
-// Checks to see that the current character in the file is in fact a double
+
 double next_num(FILE* json)
 {
     double value;
@@ -138,23 +139,15 @@ double* next_vec(FILE* json)
 }
 
 // Reads in a scene of objects taken from a JSON file
-// And accounts for varience in the way that the JSON file is created
-// EX: empty scenes, objects, comma separated and non-comma separated  objects/value pairs
-int read_scene(FILE *json, Object objects[])
-{
+int read_scene(FILE *json, Object objects[]){
     int c, items;
 	double *vector;
 	char *key, *value;
 	items = 0;
-
-	// Skip whitespace(s) read in the first character
 	skip_ws(json);
-
 	c = next_c(json);
-
-	// Check to see if the first character is an opening bracket
-	if(c != '[')
-    {
+	
+	if(c != '['){
 		fprintf(stderr, "Error, line number %d; invalid scene definition '%c'\n", lineNumber, c);
 		fclose(json);
 		exit(-1);
@@ -164,17 +157,16 @@ int read_scene(FILE *json, Object objects[])
 	c = next_c(json);
 
 	// Check to see if the json file has no objects in it
-	if(c != ']') ungetc(c, json);
+	if(c != ']'){
+		ungetc(c, json);
+	}
 
-	// While we have not run out of objects
-	while(c != ']')
-    {
+	while(c != ']'){
 		skip_ws(json);
 		c = next_c(json);
 
-		// Check to see if this is the start of an object
-		if(c != '{')
-        {
+
+		if(c != '{'){
 			fprintf(stderr, "Error, line number %d; invalid object definition '%c'\n", lineNumber, c);
 			fclose(json);
 			exit(-1);
@@ -183,55 +175,51 @@ int read_scene(FILE *json, Object objects[])
 		skip_ws(json);
 		c = next_c(json);
 
-        // While still in the same object
-		while(c != '}')
-        {
-			// If we encounter a string then unget and pass it into our nextString function
-			if(c == '"') ungetc(c, json);
+		while(c != '}'){
 
+			if(c == '"'){
+				ungetc(c, json);
+			}
 			key = next_str(json);
 
-			if(strcmp(key, "type") == 0)
-            {
+			if(strcmp(key, "type") == 0){
 				skip_ws(json);
 				c = next_c(json);
 
-				if(c != ':')
-                {
+				if(c != ':'){
 					fprintf(stderr, "Error, line number %d; invalid separator '%c'.\n", lineNumber, c);
 					fclose(json);
 					exit(-1);
 
 				}
-				// Grab the type of the object and place it into our object array
-				else
-                {
+
+				else{
 					skip_ws(json);
 					value = next_str(json);
 					objects[items].type = value;
 				}
 
-			} else if(strcmp(key, "width") == 0) {
+			} 
+			else if(strcmp(key, "width") == 0) {
 
 				skip_ws(json);
-				//printf("%c", c);
+
 				c = next_c(json);
 
 				if(c != ':') {
 
 					fprintf(stderr, "Error, line number %d; invalid separator '%c'.\n", lineNumber, c);
 					fclose(json);
-					exit(-3);
-
+					exit(1);
 				}
-				// If it is the width then lets place it in the camera structure in the object array
-				else
-                {
+				
+				else{
 					skip_ws(json);
 					objects[items].structures.camera.width = next_num(json);
 				}
 
-			} else if(strcmp(key, "height") == 0) {
+			} 
+			else if(strcmp(key, "height") == 0) {
 
 				skip_ws(json);
 				c = next_c(json);
@@ -240,17 +228,16 @@ int read_scene(FILE *json, Object objects[])
 
 					fprintf(stderr, "Error, line number %d; invalid separator '%c'.\n", lineNumber, c);
 					fclose(json);
-					exit(-1);
-
+					exit(1);
 				}
-				// If it is the height then lets place it in the camera structure in the objects array
-				else
-                {
+
+				else{
 					skip_ws(json);
 					objects[items].structures.camera.height = next_num(json);
 				}
 
-			} else if(strcmp(key, "radius") == 0) {
+			} 
+			else if(strcmp(key, "radius") == 0) {
 
 				skip_ws(json);
 				c = next_c(json);
@@ -262,14 +249,13 @@ int read_scene(FILE *json, Object objects[])
 					exit(-1);
 
 				}
-                // If it is the radius then lets place it in the sphere structure in the objects array
-				else
-                {
+				else{
 					skip_ws(json);
 					objects[items].structures.sphere.radius = next_num(json);
 				}
 
-			} else if(strcmp(key, "color") == 0) {
+			}
+			else if(strcmp(key, "color") == 0) {
 
 				skip_ws(json);
 				c = next_c(json);
@@ -278,22 +264,20 @@ int read_scene(FILE *json, Object objects[])
 
 					fprintf(stderr, "Error, line number %d; invalid separator '%c'.\n", lineNumber, c);
 					fclose(json);
-					exit(-1);
+					exit(1);
 
 				}
-				// If we have reached the color then lets place it into the right object in an array
-				else
-                {
+				else{
 					skip_ws(json);
 					vector = next_vec(json);
 
-					if(strcmp(objects[items].type, "sphere") == 0)
-                    {
+					if(strcmp(objects[items].type, "sphere") == 0){
 						objects[items].structures.sphere.color[0] = vector[0];
 						objects[items].structures.sphere.color[1] = vector[1];
 						objects[items].structures.sphere.color[2] = vector[2];
 
-					} else if(strcmp(objects[items].type, "plane") == 0) {
+					} 
+					else if(strcmp(objects[items].type, "plane") == 0) {
 
 						objects[items].structures.plane.color[0] = vector[0];
 						objects[items].structures.plane.color[1] = vector[1];
@@ -301,7 +285,8 @@ int read_scene(FILE *json, Object objects[])
 					}
 				}
 
-			} else if(strcmp(key, "position") == 0) {
+			} 
+			else if(strcmp(key, "position") == 0) {
 
 				skip_ws(json);
 				c = next_c(json);
@@ -309,29 +294,28 @@ int read_scene(FILE *json, Object objects[])
 				if(c != ':') {
 					fprintf(stderr, "Error, line number %d; invalid separator '%c'.\n", lineNumber, c);
 					fclose(json);
-					exit(-1);
+					exit(1);
 
 				}
-				// If we have reached the position then lets place it in an array of the proper object
-				else
-                {
+				else{
 					skip_ws(json);
 					vector = next_vec(json);
 
-					if(strcmp(objects[items].type, "sphere") == 0)
-                    {
+					if(strcmp(objects[items].type, "sphere") == 0){
 						objects[items].structures.sphere.position[0] = vector[0];
 						objects[items].structures.sphere.position[1] = vector[1];
 						objects[items].structures.sphere.position[2] = vector[2];
 
-					} else if(strcmp(objects[items].type, "plane") == 0) {
+					} 
+					else if(strcmp(objects[items].type, "plane") == 0) {
 						objects[items].structures.plane.position[0] = vector[0];
 						objects[items].structures.plane.position[1] = vector[1];
 						objects[items].structures.plane.position[2] = vector[2];
 					}
 				}
 
-			} else if(strcmp(key, "normal") == 0) {
+			} 
+			else if(strcmp(key, "normal") == 0) {
 
 				skip_ws(json);
 				c = next_c(json);
@@ -342,22 +326,16 @@ int read_scene(FILE *json, Object objects[])
 					exit(-1);
 
 				}
-				// If it we have found the normal attribute then lets place it in the plane structure in the object array
-				else
-                {
+				else{
 					skip_ws(json);
 					vector = next_vec(json);
-
 					objects[items].structures.plane.normal[0] = vector[0];
 					objects[items].structures.plane.normal[1] = vector[1];
 					objects[items].structures.plane.normal[2] = vector[2];
 				}
 
 			}
-			// Otherwise if there was some other object attribute then lets exit the program
-			else
-            {
-
+			else{
 				fprintf(stderr, "Error, line number %d; invalid type '%s'.\n", key);
 				fclose(json);
 				exit(-1);
@@ -366,8 +344,7 @@ int read_scene(FILE *json, Object objects[])
 			skip_ws(json);
 			c = next_c(json);
 
-			if(c == ',')
-            {
+			if(c == ','){
 				skip_ws(json);
                 c = next_c(json);
 			}
@@ -376,21 +353,21 @@ int read_scene(FILE *json, Object objects[])
 		skip_ws(json);
 		c = next_c(json);
 
-		if(c == '{') ungetc(c, json);
-
-		if(c == ',')
-        {
+		if(c == '{') {
+			ungetc(c, json);
+		}
+		if(c == ','){
 			skip_ws(json);
 			c = next_c(json);
 
 			if(c == '{') ungetc(c, json);
 		}
 
-		// Increment array index counter
+													// Increment array index counter
 		items += 1;
 
-	} // End of JSON file
+	} 												// End of JSON file
 
-	// Return the total number of objects that were in the JSON file
+													// Return the items
 	return items;
 }

@@ -1,84 +1,151 @@
-// CS 430 Project 2 Raycaster
 // Charles Beck
-// 10/2/16
-// ===========================================================================================================
+// CS 430
+// 10/4/16
+// PROJECT 2: RAYCASTER
+// ==================================================================================
+/* 	   
+	   This program reads in five arguments from the comand line in the order of :
+		
+		program_name width height output.ppm input.json
+   
+	   The program will then read in the arguments and store the data where necessary.
+   Then the program will parse the deisred JSON file while error checking for a 
+   well made and valid JSON file. After the program gets through parsing, the data
+   is stored into structures that will allow the program to test intersections of pixels 
+   with a ray that is constructed and shot at every pixel in the scene. The program will
+   store the intersection data and then write it to a P3 ppm file format with color. 
+*/  
+// ==================================================================================
 
+									// Includes contain necessary libraries,
+									//  header files, and other c files for the program
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
+#include "vector_math.h"
 #include "parser.c"
 #include "ppmwrite.c"
 
-char* fileName;
-char* outputName;
-char* height_y;
-char* width_x;
-Object objects[128];
 
-static inline double sqr(double v)
-{
+Object objects[128];				// Maximum number of objects
+
+static inline double sqr(double v){	// Inline Square method , returns squared value
+
   return v*v;
 }
 
 
-static inline void normalize(double* v)
-{
+static inline void normalize(double* v){
   double len = sqrt(sqr(v[0]) + sqr(v[1]) + sqr(v[2]));
   v[0] /= len;
   v[1] /= len;
   v[2] /= len;
 }
 
-// Takes in Ro - ray origin, Rd - ray direction, p - position of plane, and n - normal of the plane
-// If there is no intersection with the plane then we will return -1 otherwise return a t
+// Plane intersection method returns
+//   where the plane intersects the ray 
+//   and returns a t value.
 double plane_intersect(double* p, double* n, double* Rd, double* Ro){
 
-	double top, bottom, t;
-
-	top = (n[0] * Ro[0] - n[0] * p[0] + n[1] * Ro[1] - n[1] * p[1] + n[2] * Ro[2] - n[2] * p[2]);
-	bottom = (- 1 * ((n[0] * Rd[0] + n[1] * Rd[1] + n[2] * Rd[2])));
-	t = top / bottom;
-
-	if(t > 0) return t;
-
-	return (-1);
-}
+    normalize(n);
+    double deDot = v3_dot(n, Rd);
+    double c[3];
+    v3_subtract(p, Ro, c);
 
 
-// Takes in Ro - ray origin, Rd - ray direction, p - position or center sphere, and r - radius
-// If at any point we find that there is no intersection with the sphere then we
-// must make sure to return -1 that way we know whether or not to color in the pixel or not
-double shpere_intersect(double* p, double r, double* Rd, double* Ro)
-{
-    double a, b, c, t, det;
+    if (fabs(deDot) < 0.0001f){
+		return -1;
+	}   						
 
-    a = sqr(Rd[0]) + sqr(Rd[1]) + sqr(Rd[2]);
-    b =  2 * (Rd[0] * (Ro[0] - p[0]) + Rd[1] * (Ro[1] - p[1]) + Rd[2] * (Ro[2] - p[2]));
-    c = sqr(Ro[0]) - (2 * Ro[0] * p[0] + sqr(p[0]) + sqr(Ro[1])) - (2 * Ro[1] * p[1] + sqr(p[1]) + sqr(Ro[2])) - (2 * Ro[2] * p[2] + sqr(p[2])) - sqr(r);
-    det = b*b-4*c;
+    double t = v3_dot(c, n) / deDot;
 
-    t = det;
-    //printf("%d", b);
-    //exit(0);
-    //det = sqrt(det);
-    //t = (-b - det) / ( 2 * a);
-
-    if(t < 0) return -1;
+									// no intersection
+    if(t < 0.0){
+		return -1;
+	} 
 
     return t;
 }
-// Raycaster will take in the array of objects from the JSON file, the width and height desired
-// as well as the actually number of objects that were read in in order to loop through the array
-// of objects
-// Will return the buffer holding the image that we want to print out to the ppm file
-Pixmap* ray_caster(Object objects[], int width, int height, int items)
-{
-	double cx, cy, h, w, pixelHeight, pixelWidth;
-	int i, t, x, y;
 
-	PixelColor pixel;
-    Pixmap *buffer = (Pixmap *)malloc(sizeof(Pixmap));
+
+// Sphere intersection method returns
+//   where the Sphere intersects the ray 
+//   and returns a t value.
+double sphere_intersect(double* p, double r, double* Rd, double* Ro){
+
+    double a, b, c;
+									// calculate quadratic formula
+ 
+    a = sqr(Rd[0]) + sqr(Rd[1]) + sqr(Rd[2]);
+    b = 2 * (Rd[0]*(Ro[0]-p[0]) + Rd[1]*(Ro[1]-p[1]) + Rd[2]*(Ro[2]-p[2]));
+    c = sqr(Ro[0]-p[0]) + sqr(Ro[1]-p[1]) + sqr(Ro[2]-p[2]) - sqr(r);
+
+
+									// normalized
+    if (a > 1.0001 || a < .9999){
+        fprintf(stderr, "Ray direction was not normalized correctly");
+        exit(-1);
+
+    }
+
+									// check discriminant
+    double disc = sqr(b) - 4*a*c;
+
+    double t0, t1;  				// t value solutions
+
+									// no intersection
+    if (disc < 0){
+			return -1;		
+	}
+
+
+    else if (disc == 0){
+        t0 = -1*(b / (2*a));
+        return t0;
+    }
+
+  
+    else{
+        t0 = (-1*b - sqrt(sqr(b) - 4*c))/2;
+        t1 = (-1*b + sqrt(sqr(b) - 4*c))/2;
+    
+    }
+
+									// no intersection
+    if (t0 < 0 && t1 < 0){
+		return -1;
+	}
+
+    else if (t0 < 0 && t1 > 0){
+		return t1;
+	}
+    else if (t0 > 0 && t1 < 0){
+		return t0;
+	}
+   
+    else
+    {
+
+        if (t0 <= t1){
+			return t0;
+		}
+        else{ 
+			return t1;}
+    }
+ 
+
+}
+
+
+int ray_cast(Object objects[], Pixmap * buffer, double width, double height, int items){
+	double cx, cy, h, w, pixelHeight, pixelWidth;
+	int i, x, y;
+    double Ro[3] = {0, 0, 0};
+	double Rd[3] = {0, 0, 0};
+	double point[3] = {0,0, 1};
+	double view[2] = {0,0};
 
 	cx = 0;
 	cy = 0;
@@ -86,13 +153,10 @@ Pixmap* ray_caster(Object objects[], int width, int height, int items)
 	buffer->width = width;
 	buffer->height = height;
 	buffer->color = 255;
-	// Allocated memory size for image
-	buffer->image = malloc(sizeof(Pixmap) * buffer->width * buffer->height);
 
-	for(i = 0; i < items; i++)
-    {
-		if(strcmp((objects[i].type), "camera") == 0)
-        {
+												//get the size of the view plane
+	for(i = 0; i < items; i++){
+		if(strcmp(objects[i].type, "camera") == 0){
 			h = objects[i].structures.camera.height;
 			w = objects[i].structures.camera.width;
 		}
@@ -101,112 +165,93 @@ Pixmap* ray_caster(Object objects[], int width, int height, int items)
 	pixelHeight = h / height;
     pixelWidth = w / width;
 
-    // Start going row by column and checking whether each pixel intersects with an object or not
-	for (y = 0; y < height; y++)
-    {
-		for (x = 0; x < width; x++)
-		{   // rd = normalize(P - ro)
-            double Ro[3] = {0, 0, 0};
-			double Rd[3] = {cx - (w/2) + pixelWidth * (x + 0.5), cy - (h/2) + pixelHeight * (y + 0.5), 1};
-			normalize(Rd);
+   
+	for (y = 0; y < width; y++){
+        point[1] = -(view[1] - h/2.0 + pixelHeight*(y + 0.5));
+		for (x = 0; x < height; x++){
+            point[0] = view[0] - w/2.0 + pixelWidth*(x + 0.5);
+            normalize(point);
+			Rd[0] = point[0];
+            Rd[1] = point[1];
+            Rd[2] = point[2];
             double best_t = INFINITY;
-
-            //printf("%d", Rd);
-            // Go through each of the objects at each pixel and find out if they will intersect
-			for (i = 0; i < items; i++)
-            {
-				t = 0;
-				if(strcmp((objects[i].type), "sphere")){
-
-					t = shpere_intersect(objects[i].structures.sphere.position, objects[i].structures.sphere.radius,Rd, Ro);
-
-				} else if(strcmp((objects[i].type), "plane")){
-
+										// Go through each of the objects at each pixel 
+										//   to carry out intersection calculaions.
+			int best_i = 0;
+			for (i = 0; i < items; i++){
+				double t = 0;
+				if(strcmp(objects[i].type, "sphere") == 0){
+					t = sphere_intersect(objects[i].structures.sphere.position, objects[i].structures.sphere.radius,Rd, Ro);
+				} 
+				else if(strcmp(objects[i].type, "plane") == 0){
 					t = plane_intersect(objects[i].structures.plane.position, objects[i].structures.plane.normal, Rd, Ro);
-
-				}
-				else
-                {
-					fprintf(stderr, "Error, object type is not valid.\n");
-					exit(-1);
 				}
 
-				if (t > 0 && t < best_t)
-                {
+				if (t > 0 && t < best_t){
 					best_t = t;
-                    //printf("%d", t);
+                    best_i = i;
 				}
 
-				if(best_t > 0 && best_t != INFINITY)
-                {
-                    if(strcmp((objects[i].type), "sphere"))
-                    {
-                        //printf("Hey we are changing the color!");
-                        pixel.r = objects[i].structures.sphere.color[0];
-                        pixel.g = objects[i].structures.sphere.color[1];
-                        pixel.b = objects[i].structures.sphere.color[2];
-                        buffer->image[y * width + x] = pixel;
+													// save color to buffer
+				if(best_t > 0 && best_t != INFINITY){
+                    if(strcmp(objects[best_i].type, "sphere") == 0){
+                        buffer->image[y*3 * buffer->width + x*3].r = objects[best_i].structures.sphere.color[0] *255;
+                        buffer->image[y*3 * buffer->width + x*3+1].g = objects[best_i].structures.sphere.color[1] *255;
+                        buffer->image[y*3 * buffer->width + x*3+2].b = objects[best_i].structures.sphere.color[2] *255;
                     }
-                    else if(strcmp((objects[i].type), "plane"))
-                    {   //printf("plane color");
-                        pixel.r = objects[i].structures.plane.color[0];
-                        pixel.g = objects[i].structures.plane.color[1];
-                        pixel.b = objects[i].structures.plane.color[2];
-                        buffer->image[y * width + x] = pixel;
-                    }
-                    else
-                    {
-                        fprintf(stderr, "ERROR, Object type has no color property");
-                        exit(-1);
+                    else if(strcmp(objects[best_i].type, "plane") == 0){
+                        buffer->image[y*3 * buffer->width + x*3].r = objects[best_i].structures.plane.color[0]*255 ;
+                        buffer->image[y*3 * buffer->width + x*3+1].g = objects[best_i].structures.plane.color[1]*255;
+                        buffer->image[y*3 * buffer->width + x*3+2].b = objects[best_i].structures.plane.color[2]*255;
                     }
 				}
-				// If no intersection let white be the background
-				else
-                { // printf("no intersection!!\n");
-
-					pixel.r =  0;
-					pixel.g = 0;
-					pixel.b = 0;
-					buffer->image[y * width + x] = pixel;
-
+				else{ 
+													// no intersection results in background color
+                    buffer->image[y*3 * buffer->width + x*3].r = 0*255 ;
+                    buffer->image[y*3 * buffer->width + x*3+1].g = 0*255;
+                    buffer->image[y*3 * buffer->width + x*3+2].b = 0*255;
 				}
-
 			}
 
 		}
 	}
 
-	return buffer;
+	return 0;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
+	if (argc != 5) {
+	fprintf(stderr, "Error: Usage width height output.ppm input.json");
+	exit(1);
+	}
 	FILE *json;
 	int items, i;
-	
-    Pixmap* picbuffer;
-    picbuffer = (Pixmap *)malloc(sizeof(Pixmap));
+	int ppmFormat = 3;
+	double width, height;
+	width = atof(argv[1]);
+	height = atof(argv[2]);
 
-	
-	json = fopen("objects.json", "r");
-	if(json == NULL)
-    {
+    Pixmap picbuffer;
+    picbuffer.image = (PixelColor*)malloc(sizeof(PixelColor)*width* (height*3));
+
+	json = fopen(argv[4], "r");
+	if(json == NULL){
 		fprintf(stderr, "Error: could not open file.\n");
 		fclose(json);
-		exit(-1);
-
+		exit(1);
 	}
-	
-	else
-	{
+
+	else{
 		items = read_scene(json, objects);
-        picbuffer = ray_caster(objects, 200, 200, items);
+        ray_cast(objects, &picbuffer, width, height, items);
 
-        int size = picbuffer->height * picbuffer->width;
-        //printf("%d", size);
+        int size = height * width;
 
-        ppmWriter(picbuffer, "output.ppm", size , 3);
-
+        ppmWriter(&picbuffer, argv[3], size , ppmFormat);
 	}
+
+    fclose(json);
+    free(picbuffer.image);
+
 	return 0;
 }
