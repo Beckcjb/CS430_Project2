@@ -1,6 +1,6 @@
 
-#ifndef JSONOBJECTS_H_INCLUDED
-#define JSONOBJECTS_H_INCLUDED
+#ifndef OBJECTSTRUCTS_H_INCLUDED
+#define OBJECSTRUCTS_H_INCLUDED
 
 typedef struct Camera
 {
@@ -40,4 +40,4 @@ typedef struct Object
 
 } Object;
 
-#endif // JSONOBJECTS_H_INCLUDED
+#endif // OBJECSTRUCTS_H_INCLUDED
