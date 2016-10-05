@@ -1,6 +1,6 @@
 
 #ifndef OBJECTSTRUCTS_H_INCLUDED
-#define OBJECSTRUCTS_H_INCLUDED
+#define OBJECTSTRUCTS_H_INCLUDED
 
 typedef struct Camera
 {
@@ -40,4 +40,4 @@ typedef struct Object
 
 } Object;
 
-#endif // OBJECSTRUCTS_H_INCLUDED
+#endif // OBJECTSTRUCTS_H_INCLUDED
