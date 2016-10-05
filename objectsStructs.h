@@ -1,14 +1,14 @@
 
 #ifndef OBJECTSTRUCTS_H_INCLUDED
 #define OBJECTSTRUCTS_H_INCLUDED
-
+// object Camer struct 
 typedef struct Camera
 {
 	double width;
 	double height;
 } Camera;
 
-
+// object plane struct
 typedef struct Plane
 {
 	double color[3];
@@ -17,7 +17,7 @@ typedef struct Plane
 
 } Plane;
 
-
+// object sphere struct
 typedef struct Sphere
 {
 	double color[3];
@@ -25,7 +25,7 @@ typedef struct Sphere
 	double radius;
 
 } Sphere;
-
+// objects union
 typedef struct Object
 {
 	char *type;
@@ -40,4 +40,4 @@ typedef struct Object
 
 } Object;
 
-#endif // OBJECTSTRUCTS_H_INCLUDED
+#endif // OBJECSTRUCTS_H_INCLUDED
